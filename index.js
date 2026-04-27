@@ -53,6 +53,21 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+app.post('/api/clear', (req, res) => {
+    const storagePath = path.join(__dirname, 'storage.json');
+    const emptyStorage = {
+        last_processed_event_id: null,
+        findings: [],
+        stats: {
+            total_scanned_commits: 0,
+            total_leaks_found: 0,
+            start_time: new Date().toISOString()
+        }
+    };
+    fs.writeFileSync(storagePath, JSON.stringify(emptyStorage, null, 4));
+    res.json({ success: true });
+});
+
 app.listen(PORT, () => {
     console.log(chalk.green.bold(`\n🚀 Dashboard available at http://localhost:${PORT}`));
     console.log(chalk.gray('Use the dashboard to monitor leaks in real-time.'));

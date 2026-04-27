@@ -177,8 +177,11 @@ class GitHubScanner {
             console.log(chalk.green(`Found ${data.total_count} potential files for query "${query}"`));
             
             for (const item of data.items) {
-                // Find the pattern that matches this query to use its regex
-                const pattern = PATTERNS.find(p => p.name.includes(query) || query.includes(p.name.split(' ')[0]));
+                // Better pattern matching
+                const pattern = PATTERNS.find(p => 
+                    p.name.toLowerCase().includes(query.toLowerCase()) || 
+                    query.toLowerCase().includes(p.name.split(' ')[0].toLowerCase())
+                );
                 
                 let match = "Context search required";
                 let context = "Download file for full context.";

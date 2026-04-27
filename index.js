@@ -5,7 +5,7 @@ const chalk = require('chalk');
 const { exec } = require('child_process');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Start the scanner in a separate process
 console.log(chalk.blue('Starting Scanner Process...'));

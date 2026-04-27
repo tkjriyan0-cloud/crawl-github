@@ -6,6 +6,7 @@ const path = require("path");
 const PATTERNS = require("./patterns");
 const userIntel = require("./osint");
 const downloader = require("./downloader");
+const db = require("./database");
 const { DateTime } = require("luxon");
 require("dotenv").config();
 
@@ -35,14 +36,19 @@ class GitHubScanner {
         console.log(chalk.red.bold(`\n[!] LEAK DETECTED: ${finding.name}`));
         console.log(chalk.white(`    Repo: ${finding.repo}`));
         console.log(chalk.white(`    User: ${finding.user}`));
-        console.log(chalk.white(`    File: ${finding.file || 'N/A'}`));
         console.log(chalk.blue(`    URL: ${finding.url}\n`));
 
-        this.storage.findings.push({
+        const findingWithTime = {
             ...finding,
             timestamp: DateTime.now().toISO()
-        });
+        };
+
+        this.storage.findings.push(findingWithTime);
         this.storage.stats.total_leaks_found++;
+        
+        // Sync to Supabase Cloud
+        await db.saveFinding(findingWithTime);
+        
         await this.saveStorage();
     }
 

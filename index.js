@@ -19,15 +19,28 @@ scannerProcess.stderr.on('data', (data) => {
     process.stderr.write(data);
 });
 
+const db = require('./database');
+
 // Serve dashboard
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // API for findings
-app.get('/api/findings', (req, res) => {
+app.get('/api/findings', async (req, res) => {
+    let findings = [];
     const storage = JSON.parse(fs.readFileSync(path.join(__dirname, 'storage.json'), 'utf8'));
-    res.json(storage);
+
+    if (db.client) {
+        findings = await db.getAllFindings();
+    } else {
+        findings = storage.findings;
+    }
+
+    res.json({
+        ...storage,
+        findings: findings
+    });
 });
 
 // Mock scanner state since it's in a separate process for now

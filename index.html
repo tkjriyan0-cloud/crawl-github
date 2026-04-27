@@ -189,6 +189,7 @@
                     <thead>
                         <tr style="background: #ffffff03; border-bottom: 1px solid var(--border); text-align: left;">
                             <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">SECRET TYPE</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">LEAKED KEY (SNIPPET)</th>
                             <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">REPOSITORY</th>
                             <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">USER</th>
                             <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">SEVERITY</th>
@@ -299,6 +300,7 @@
                         
                         row.innerHTML = `
                             <td style="padding: 16px 24px; font-weight: 700;">${finding.name}</td>
+                            <td style="padding: 16px 24px;"><code style="background: #ffffff10; padding: 4px 8px; border-radius: 4px; font-family: 'JetBrains Mono'; color: var(--accent);">${finding.match}</code></td>
                             <td style="padding: 16px 24px;"><a href="${finding.url}" target="_blank" class="finding-repo">${finding.repo}</a></td>
                             <td style="padding: 16px 24px; color: var(--text-dim);">${finding.user}</td>
                             <td style="padding: 16px 24px;"><span class="severity sev-${finding.severity.toLowerCase()}">${finding.severity}</span></td>

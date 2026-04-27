@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GH-Scanner PRO // 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #050505;
+            --card-bg: #111114;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.3);
+            --danger: #dc2626;
+            --warning: #d97706;
+            --success: #059669;
+            --text: #ffffff;
+            --text-dim: #71717a;
+            --border: #27272a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .logo-text { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff05;
+            padding: 6px 12px;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pulse { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); } 100% { transform: scale(0.95); } }
+
+        .dashboard { max-width: 1400px; margin: 40px auto; padding: 0 40px; display: grid; grid-template-columns: 300px 1fr; gap: 40px; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+        .card-title { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+
+        .stat-item { margin-bottom: 20px; }
+        .stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text); }
+        .stat-label { font-size: 0.8rem; color: var(--text-dim); }
+
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+
+        .finding-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .finding-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .finding-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--danger); }
+
+        .finding-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .finding-name { font-weight: 700; font-size: 1rem; }
+        .severity { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        .sev-critical { background: #dc262620; color: #dc2626; border: 1px solid #dc262640; }
+        .sev-high { background: #d9770620; color: #d97706; border: 1px solid #d9770640; }
+
+        .finding-meta { font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; display: flex; gap: 16px; }
+        .finding-repo { color: var(--accent); font-weight: 600; text-decoration: none; }
+
+        .actions { display: flex; gap: 8px; align-self: center; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-primary { background: var(--accent); color: white; border: none; }
+        .btn-outline { background: transparent; color: var(--text); }
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+
+        /* Modal */
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 800px; padding: 32px; position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; color: var(--text-dim); cursor: pointer; }
+
+        pre { background: #000; padding: 20px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; overflow-x: auto; color: #a1a1aa; border: 1px solid var(--border); margin-top: 20px; }
+        .highlight { color: var(--danger); background: #dc262620; font-weight: 700; padding: 0 4px; border-radius: 2px; }
+
+        .empty-state { text-align: center; padding: 100px 0; color: var(--text-dim); font-size: 0.9rem; }
+        
+        .safe-indicator { display: flex; align-items: center; gap: 8px; color: var(--success); font-weight: 600; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo-box">
+            <div class="logo-icon">S</div>
+            <div class="logo-text">SCANNER<span style="color: var(--accent)">PRO</span></div>
+        </div>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div class="safe-indicator">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                AUTO-SAFETY ENABLED
+            </div>
+            <div class="status-badge">
+                <span class="pulse"></span> LIVE
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-title">Intelligence Stats</div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-scanned">0</div>
+                    <div class="stat-label">Commits Analyzed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: var(--danger)" id="stat-leaks">0</div>
+                    <div class="stat-label">Verified Leaks</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Safety Shield</div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: var(--success)">100%</div>
+                    <div class="stat-label">Account Protection</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-uptime">0m</div>
+                    <div class="stat-label">System Uptime</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Threat Distribution</div>
+                <canvas id="threatChart" width="200" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="font-size: 1rem; font-weight: 700;">Verified Leak Database</h2>
+                    <div style="font-size: 0.75rem; color: var(--text-dim);">Last updated: <span id="last-update">Just now</span></div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="background: #ffffff03; border-bottom: 1px solid var(--border); text-align: left;">
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">SECRET TYPE</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">REPOSITORY</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">USER</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">SEVERITY</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">DETECTION TIME</th>
+                            <th style="padding: 16px 24px; color: var(--text-dim); font-weight: 600;">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="findings-table-body">
+                        <!-- Findings will appear here -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="empty-state">
+                    Initializing global scan engine...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">✕</span>
+            <h2 id="modal-title">Leak Intelligence</h2>
+            <p id="modal-meta" style="color: var(--text-dim); font-size: 0.8rem; margin-top: 8px;"></p>
+            
+            <div id="intel-section" style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <!-- OSINT data will appear here -->
+            </div>
+
+            <pre id="modal-context"></pre>
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <button class="btn btn-primary" id="copy-btn">Copy Full Token</button>
+                <a href="#" target="_blank" class="btn btn-outline" id="repo-link">View Repo</a>
+            </div>
+        </div>
+    </div>
+
+    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <script>
+        let lastLeakCount = 0;
+        let threatChart = null;
+
+        function updateChart(data) {
+            const categories = {};
+            data.findings.forEach(f => {
+                categories[f.name] = (categories[f.name] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('threatChart').getContext('2d');
+            
+            if (threatChart) {
+                threatChart.destroy();
+            }
+
+            threatChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        data: Object.values(categories),
+                        backgroundColor: ['#2563eb', '#dc2626', '#d97706', '#059669', '#7c3aed', '#db2777'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/findings');
+                const data = await response.json();
+
+                updateChart(data);
+
+                document.getElementById('stat-scanned').innerText = data.stats.total_scanned_commits.toLocaleString();
+                document.getElementById('stat-leaks').innerText = data.stats.total_leaks_found.toLocaleString();
+                
+                const startTime = new Date(data.stats.start_time);
+                const diff = Math.floor((new Date() - startTime) / 60000);
+                document.getElementById('stat-uptime').innerText = diff + 'm';
+                document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+
+                // Sound Alert
+                if (data.findings.length > lastLeakCount) {
+                    document.getElementById('alert-sound').play();
+                    lastLeakCount = data.findings.length;
+                }
+
+                const tableBody = document.getElementById('findings-table-body');
+                const emptyState = document.getElementById('empty-state');
+
+                if (data.findings.length > 0) {
+                    emptyState.style.display = 'none';
+                    tableBody.innerHTML = '';
+                    data.findings.slice().reverse().forEach(finding => {
+                        const row = document.createElement('tr');
+                        row.style.borderBottom = '1px solid var(--border)';
+                        row.style.transition = 'background 0.2s';
+                        row.onmouseover = () => row.style.background = '#ffffff02';
+                        row.onmouseout = () => row.style.background = 'transparent';
+                        
+                        row.innerHTML = `
+                            <td style="padding: 16px 24px; font-weight: 700;">${finding.name}</td>
+                            <td style="padding: 16px 24px;"><a href="${finding.url}" target="_blank" class="finding-repo">${finding.repo}</a></td>
+                            <td style="padding: 16px 24px; color: var(--text-dim);">${finding.user}</td>
+                            <td style="padding: 16px 24px;"><span class="severity sev-${finding.severity.toLowerCase()}">${finding.severity}</span></td>
+                            <td style="padding: 16px 24px; color: var(--text-dim);">${new Date(finding.timestamp).toLocaleTimeString()}</td>
+                            <td style="padding: 16px 24px;">
+                                <button class="btn btn-primary" style="padding: 4px 12px; font-size: 0.7rem;" onclick="showLeak('${encodeURIComponent(JSON.stringify(finding))}')">ANALYZE</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    emptyState.style.display = 'block';
+                    emptyState.innerText = 'No leaks detected. The system is scanning global commits...';
+                }
+            } catch (error) {
+                console.error('Dashboard sync error:', error);
+            }
+        }
+
+        function showLeak(encodedData) {
+            const finding = JSON.parse(decodeURIComponent(encodedData));
+            const modal = document.getElementById('modal');
+            const context = finding.context || "No context available.";
+            const intel = finding.user_intel || {};
+            
+            document.getElementById('modal-title').innerText = finding.name;
+            document.getElementById('modal-meta').innerText = `${finding.repo} • Commit: ${finding.commit.substring(0, 7)}`;
+            
+            // Populate Intel
+            document.getElementById('intel-section').innerHTML = `
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">User Profile</div>
+                    <div style="font-weight: 700; margin-top: 4px;">${intel.name || finding.user}</div>
+                    <div style="font-size: 0.8rem; color: var(--accent);">${intel.email || 'Private Email'}</div>
+                    <div style="font-size: 0.8rem;">${intel.location || 'No location'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Account Authority</div>
+                    <div style="font-size: 0.8rem; margin-top: 4px;">Repos: ${intel.public_repos || 0}</div>
+                    <div style="font-size: 0.8rem;">Followers: ${intel.followers || 0}</div>
+                    <a href="${intel.profile_url}" target="_blank" style="font-size: 0.8rem; color: var(--accent);">View GitHub Profile</a>
+                </div>
+            `;
+
+            // Highlight the leak in context
+            const highlighted = context.replace(finding.match, `<span class="highlight">${finding.match}</span>`);
+            document.getElementById('modal-context').innerHTML = highlighted;
+            
+            document.getElementById('copy-btn').onclick = () => {
+                navigator.clipboard.writeText(finding.full_match);
+                alert('Token copied to clipboard!');
+            };
+            
+            document.getElementById('repo-link').href = finding.url;
+            
+            if (finding.local_path) {
+                const downloadInfo = document.createElement('div');
+                downloadInfo.style.marginTop = '12px';
+                downloadInfo.style.color = 'var(--success)';
+                downloadInfo.style.fontSize = '0.75rem';
+                downloadInfo.innerHTML = `🛡️ <b>Secured Locally:</b> ${finding.local_path}`;
+                document.getElementById('intel-section').appendChild(downloadInfo);
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        setInterval(updateDashboard, 2000);
+        updateDashboard();
+    </script>
+</body>
+</html>

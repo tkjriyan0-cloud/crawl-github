@@ -177,14 +177,46 @@ class GitHubScanner {
             console.log(chalk.green(`Found ${data.total_count} potential files for query "${query}"`));
             
             for (const item of data.items) {
+                // Find the pattern that matches this query to use its regex
+                const pattern = PATTERNS.find(p => p.name.includes(query) || query.includes(p.name.split(' ')[0]));
+                
+                let match = "Context search required";
+                let context = "Download file for full context.";
+
+                try {
+                    // Fetch raw file content to extract the exact match
+                    const rawUrl = item.html_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+                    const fileResponse = await axios.get(rawUrl);
+                    const content = fileResponse.data;
+
+                    if (pattern && content) {
+                        const matches = content.match(pattern.regex);
+                        if (matches) {
+                            match = matches[0].substring(0, 15) + "...";
+                            
+                            // Extract context
+                            const lines = content.split('\n');
+                            const matchLineIndex = lines.findIndex(l => l.includes(matches[0]));
+                            context = lines.slice(Math.max(0, matchLineIndex - 2), Math.min(lines.length, matchLineIndex + 3)).join('\n');
+                        }
+                    }
+                } catch (e) {
+                    // Raw fetch might fail, keep default info
+                }
+
+                const intel = await userIntel.enrich(item.repository.owner.login);
+
                 await this.logFinding({
-                    name: `Potential ${query} Match`,
+                    name: pattern ? pattern.name : `Potential ${query} Match`,
                     repo: item.repository.full_name,
                     user: item.repository.owner.login,
                     file: item.path,
                     url: item.html_url,
-                    severity: 'Unknown',
-                    match: 'Context search required'
+                    severity: pattern ? pattern.severity : 'Unknown',
+                    match: match,
+                    context: context,
+                    full_match: match === "Context search required" ? null : match,
+                    user_intel: intel
                 });
             }
         } catch (error) {
